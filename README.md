@@ -1,4 +1,4 @@
-# Spam Detection Web App
+# Spam Mail Detection Web App
 
 A lightweight Flask web application that classifies messages (email/SMS) as **Spam** or **Ham** using a scikit-learn pipeline. The app includes a reusable serialized pipeline (`spam_classifier_pipeline.joblib`) and a simple web UI at `templates/index.html`.
 
