@@ -13,47 +13,11 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (accuracy_score, f1_score)
 from sklearn.pipeline import Pipeline
-from sklearn.base import BaseEstimator, TransformerMixin
 
 import joblib
 
 # text preprocessor
-class TextPreprocessor(BaseEstimator, TransformerMixin):
-    def __init__(self, stem=True, remove_stopwords=True):
-        self.stemmer = PorterStemmer() if stem else None
-        self.stopwords = set(stopwords.words('english')) if remove_stopwords else None
-
-    def clean_text(self, text):
-        text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
-        text = re.sub(r'\S+@\S+', '', text)
-        text = re.sub(r'[^a-zA-Z\s]', '', text)
-        return text.lower()
-
-    def tokenize_and_stem(self, text):
-
-        try:
-            tokens = word_tokenize(text)
-        except LookupError:
-
-
-             print("Downloading punkt_tab resource...")
-             nltk.download('punkt_tab', quiet=True)
-             tokens = word_tokenize(text)
-
-        if self.stemmer:
-            tokens = [self.stemmer.stem(token) for token in tokens]
-        if self.stopwords:
-            tokens = [token for token in tokens if token not in self.stopwords]
-        return ' '.join(tokens)
-
-    def transform(self, x, y=None):
-        # Handle potential non-string inputs
-
-        #apply the cleaning and tokenization to each element in X
-        return [self.tokenize_and_stem(self.clean_text(str(text))) for text in x]
-
-    def fit(self, x, y=None):
-        return self
+from models import TextPreprocessor
 
 def load_data(file_name='mail_data.csv'):
 
@@ -142,9 +106,19 @@ def load_model(model_path='spam_classifier_pipeline.joblib'):
 from flask import Flask, render_template, request
 app = Flask(__name__)
 
-# Load model
-model = joblib.load('spam_classifier_pipeline.joblib')
-
+# Load or train model
+if os.path.exists('spam_classifier_pipeline.joblib'):
+    print("Loading existing model...")
+    model = joblib.load('spam_classifier_pipeline.joblib')
+else:
+    print("Model not found. Training new model...")
+    try:
+        data = load_data('mail_data.csv')
+        x, y = prepare_data(data)
+        model = train_and_save_model(x, y)
+    except Exception as e:
+        print(f"Error training model: {str(e)}")
+        model = None
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
