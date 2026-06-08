@@ -1,6 +1,11 @@
 # Spam Mail Detection Web App
 
-A lightweight Flask web application that classifies messages (email/SMS) as **Spam** or **Ham** using a scikit-learn pipeline. The app includes a reusable serialized pipeline (`spam_classifier_pipeline.joblib`) and a simple web UI at `templates/index.html`.
+A lightweight Flask web application that classifies messages (email/SMS) as **Spam** or **Ham** using a scikit-learn pipeline. The app includes a reusable serialized pipeline and a simple web UI.
+
+## 🚀 Live Demo
+**Try it now:** https://spammailclass1.vercel.app
+
+## Overview
 
 This README focuses on features, architecture, setup, retraining, evaluation, deployment guidance, and troubleshooting.
 
@@ -8,7 +13,7 @@ Checklist
 - Quick start (local development)
 - Features and architecture overview
 - How to retrain and evaluate the model
-- Deployment recommendations and security notes
+- Deployment on Vercel
 
 Key features
 - Accurate, explainable pipeline:
@@ -27,10 +32,15 @@ Key features
   - `app.py` exposes helper functions for data loading, preparation, pipeline building, training and persistence.
 
 Repository structure
-- `app.py` — Flask app and ML utilities (preprocessor, pipeline builder, training helpers).
+- `app.py` — Flask app, model loading/training logic, and route handler (`/` POST for predictions).
+- `models.py` — `TextPreprocessor` class (custom sklearn transformer for text preprocessing).
 - `spam_classifier_pipeline.joblib` — serialized trained pipeline (used for predictions).
-- `mail_data.csv` — sample dataset (if present) used for training.
-- `templates/index.html` — web UI template.
+- `mail_data.csv` — sample dataset used for training/retraining the model.
+- `templates/index.html` — web UI template (HTML form for text input and prediction display).
+- `build.sh` — build script for Vercel (downloads NLTK data before deployment).
+- `download_nltk_data.py` — Python script to download and bundle NLTK data locally.
+- `vercel.json` — Vercel deployment configuration.
+- `requirements.txt` — Python package dependencies.
 
 Quick start (development)
 1. Create & activate a virtual environment (PowerShell):
@@ -124,17 +134,57 @@ print(resp.text)
 
 Common issues & troubleshooting
 - Missing or invalid `spam_classifier_pipeline.joblib`:
-  - Ensure a valid model file exists in the project root. Retrain if needed (see Retrain section).
+  - Ensure a valid model file exists in the project root. The app will auto-train on first deployment if missing.
 - NLTK LookupError:
-  - Run the NLTK downloads shown earlier.
-  - Note: `app.py` contains a non-standard token resource name `punkt_tab` in one download attempt. If you encounter tokenization errors, change that download call to use `'punkt'` instead of `'punkt_tab'` in your local copy of `app.py`.
+  - **Local development:** Run `python download_nltk_data.py` to download required NLTK data.
+  - **Vercel deployment:** NLTK data is automatically downloaded during build via `build.sh` and bundled with your app.
 - If Flask fails to start on port 5000 because of collisions, change port in `app.run()` or run:
 ```powershell
 python -m flask run --port 5001
 ```
 
+## Deployment on Vercel
+
+### Changes Made (June 8, 2026)
+
+This app was successfully deployed to Vercel with the following fixes and improvements:
+
+1. **Modularized `TextPreprocessor`** — Moved from `app.py` to `models.py` to fix joblib deserialization errors in serverless environments.
+2. **Auto-training on startup** — If `spam_classifier_pipeline.joblib` is missing, the app trains a new model using `mail_data.csv` on first run.
+3. **NLTK data bundling** — Created build-time download script to ensure NLTK corpora (`punkt_tab`, `stopwords`) are available at runtime without permission issues.
+4. **Vercel configuration** — Added `vercel.json` and `build.sh` for automated Vercel deployments.
+
+### Steps to Deploy
+
+1. **Fork/push to GitHub:**
+```bash
+git push origin main
+```
+
+2. **Connect to Vercel:**
+   - Go to [vercel.com](https://vercel.com)
+   - Import your GitHub repository
+   - Vercel auto-detects the `vercel.json` config
+
+3. **Build & Deploy:**
+   - Vercel runs `build.sh` → downloads NLTK data
+   - Bundles everything with your app
+   - Django/Flask apps run as serverless functions
+   - App automatically retrains if `.joblib` is not present
+
+4. **Access your app:**
+   - Vercel assigns a URL like `https://spammailclass1.vercel.app`
+   - Test POST requests to `/` with form data `email_text=<text>`
+
 Production deployment suggestions
-- Do NOT run Flask with `debug=True` in production.
+
+**Vercel (Recommended for Flask apps):**
+- Vercel automatically serves your Flask app as serverless functions
+- No need to configure WSGI servers manually
+- See [Deployment on Vercel](#deployment-on-vercel) section above
+
+**Traditional hosting (VPS, Docker, etc.):**
+- Do NOT run Flask with `debug=True` in production
 - Use a production WSGI server:
   - Windows: use Waitress
   ```powershell
@@ -142,9 +192,9 @@ Production deployment suggestions
   waitress-serve --listen=0.0.0.0:8000 app:app
   ```
   - Linux: use Gunicorn
-- Containerization (Docker) is recommended for consistent environments.
-- Pin package versions in `requirements.txt` for reproducible builds.
-- Add logging, monitoring, and health checks.
+- Containerization (Docker) is recommended for consistent environments
+- Pin package versions in `requirements.txt` for reproducible builds
+- Add logging, monitoring, and health checks
 
 Security & data privacy
 - Avoid storing sensitive user data in plain text.
