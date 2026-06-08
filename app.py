@@ -1,4 +1,10 @@
 import os
+import sys
+
+# Set NLTK data path before importing nltk modules
+nltk_data_path = os.path.join(os.path.dirname(__file__), 'nltk_data')
+os.environ['NLTK_DATA'] = nltk_data_path
+
 import pandas as pd
 import re
 from nltk.stem import PorterStemmer

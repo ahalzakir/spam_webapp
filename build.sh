@@ -1,3 +1,4 @@
 #!/bin/bash
-python -c "import nltk; nltk.download('punkt_tab'); nltk.download('stopwords')"
+python download_nltk_data.py
+echo "Build complete"
 
