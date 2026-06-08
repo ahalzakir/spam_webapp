@@ -3,7 +3,6 @@ import re
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
-import nltk
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
@@ -19,12 +18,7 @@ class TextPreprocessor(BaseEstimator, TransformerMixin):
         return text.lower()
 
     def tokenize_and_stem(self, text):
-        try:
-            tokens = word_tokenize(text)
-        except LookupError:
-            print("Downloading punkt resource...")
-            nltk.download('punkt', quiet=True)
-            tokens = word_tokenize(text)
+        tokens = word_tokenize(text)
 
         if self.stemmer:
             tokens = [self.stemmer.stem(token) for token in tokens]
